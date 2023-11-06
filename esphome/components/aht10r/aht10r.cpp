@@ -21,27 +21,35 @@ namespace esphome {
 namespace aht10r {
 
 static const char *const TAG = "aht10r";
-static const uint8_t AHT10r_CALIBRATE_CMD[] ={0xE1, 0x08, 0x00};
+static const uint8_t AHT10r_CALIBRATE_CMD[] = {0xE1, 0x08, 0x00};
 static const uint8_t AHT10r_MEASURE_CMD[] = {0xAC, 0x33, 0x00};
-static const uint8_t AHT10r_DEFAULT_DELAY = 100;    // ms, for calibration and temperature measurement
+static const uint8_t AHT10r_DEFAULT_DELAY = 100;  // ms, for calibration and temperature measurement
 static const uint8_t AHT10r_HUMIDITY_DELAY = 50;  // ms
 static const uint8_t AHT10r_ATTEMPTS = 5;         // safety margin, normally 3 attempts are enough: 3*30=90ms
 
 void AHT10rComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10r...");
-
-  if (!this->write_bytes(0, AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD))) {
-    ESP_LOGE(TAG, "Communication with AHT10r AHT10r_CALIBRATE_CMD failed!");
-    this->mark_failed();
-    return;
+  bool ret = false;
+  for (int i = 0; i < 5; ++i) {
+    ret = this->write_bytes(0, AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD));
+    if (!ret)
+    {
+      ESP_LOGE(TAG, "Communication with AHT10r AHT10r_CALIBRATE_CMD failed! %d ", i);
+      delay(AHT10r_DEFAULT_DELAY *2);
+    }
   }
+  if (ret == false) 
+  {
+      ESP_LOGE(TAG, "Communication with AHT10r_CALIBRATE_CMD failed! ALL");
+  }
+
   uint8_t data = 0;
   if (this->write(&data, 1) != i2c::ERROR_OK) {
     ESP_LOGD(TAG, "Communication with AHT10r write failed!");
     this->mark_failed();
     return;
   }
-  delay(AHT10r_DEFAULT_DELAY * 5 );
+  delay(AHT10r_DEFAULT_DELAY * 5);
   if (this->read(&data, 1) != i2c::ERROR_OK) {
     ESP_LOGD(TAG, "Communication with  AHT10r data failed!");
     this->mark_failed();
@@ -58,12 +66,13 @@ void AHT10rComponent::setup() {
     return;
   }
 
-  ESP_LOGV(TAG, "AHT10r calibrated");
+  ESP_LOGI(TAG, "AHT10r calibrated");
 }
 
 void AHT10rComponent::update() {
+  ESP_LOGI(TAG, "AHT10r update started");
   if (!this->write_bytes(0, AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
-    ESP_LOGE(TAG, "Communication with AHT10r failed!");
+    ESP_LOGE(TAG, "Communication with AHT10r update failed!");
     this->status_set_warning();
     return;
   }
@@ -90,7 +99,7 @@ void AHT10rComponent::update() {
       } else {
         ESP_LOGD(TAG, "ATH10 Unrealistic humidity (0x0), retrying...");
         if (!this->write_bytes(0, AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
-          ESP_LOGE(TAG, "Communication with AHT10r failed!");
+          ESP_LOGE(TAG, "Communication with AHT10r write_bytes failed!");
           this->status_set_warning();
           return;
         }
@@ -129,15 +138,17 @@ void AHT10rComponent::update() {
     this->humidity_sensor_->publish_state(humidity);
   }
   this->status_clear_warning();
+  ESP_LOGI(TAG, "AHT10r update ended");
 }
 
 float AHT10rComponent::get_setup_priority() const { return setup_priority::DATA; }
 
 void AHT10rComponent::dump_config() {
+  ESP_LOGI(TAG, "AHT10r dump_config start");
   ESP_LOGCONFIG(TAG, "AHT10r:");
   LOG_I2C_DEVICE(this);
   if (this->is_failed()) {
-    ESP_LOGE(TAG, "Communication with AHT10r failed!");
+    ESP_LOGE(TAG, "Communication with AHT10r dump_config failed!");
   }
   LOG_SENSOR("  ", "Temperature", this->temperature_sensor_);
   LOG_SENSOR("  ", "Humidity", this->humidity_sensor_);
