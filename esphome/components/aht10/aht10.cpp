@@ -21,34 +21,34 @@ namespace esphome {
 namespace aht10 {
 
 static const char *const TAG = "aht10";
-static const uint8_t AHT10_CALIBRATE_CMD[] = {0xE1};
+static const uint8_t AHT10_CALIBRATE_CMD[] ={0xE1, 0x08, 0x00};
 static const uint8_t AHT10_MEASURE_CMD[] = {0xAC, 0x33, 0x00};
-static const uint8_t AHT10_DEFAULT_DELAY = 5;    // ms, for calibration and temperature measurement
-static const uint8_t AHT10_HUMIDITY_DELAY = 30;  // ms
-static const uint8_t AHT10_ATTEMPTS = 3;         // safety margin, normally 3 attempts are enough: 3*30=90ms
+static const uint8_t AHT10_DEFAULT_DELAY = 100;    // ms, for calibration and temperature measurement
+static const uint8_t AHT10_HUMIDITY_DELAY = 50;  // ms
+static const uint8_t AHT10_ATTEMPTS = 5;         // safety margin, normally 3 attempts are enough: 3*30=90ms
 
 void AHT10Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10...");
 
   if (!this->write_bytes(0, AHT10_CALIBRATE_CMD, sizeof(AHT10_CALIBRATE_CMD))) {
-    ESP_LOGE(TAG, "Communication with AHT10 failed!");
+    ESP_LOGE(TAG, "Communication with AHT10 AHT10_CALIBRATE_CMD failed!");
     this->mark_failed();
     return;
   }
   uint8_t data = 0;
   if (this->write(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
+    ESP_LOGD(TAG, "Communication with AHT10 write failed!");
     this->mark_failed();
     return;
   }
-  delay(AHT10_DEFAULT_DELAY);
+  delay(AHT10_DEFAULT_DELAY * 5 );
   if (this->read(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
+    ESP_LOGD(TAG, "Communication with  AHT10 data failed!");
     this->mark_failed();
     return;
   }
   if (this->read(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
+    ESP_LOGD(TAG, "Communication with AHT10 read 2 failed!");
     this->mark_failed();
     return;
   }
