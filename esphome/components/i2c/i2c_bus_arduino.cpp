@@ -119,6 +119,7 @@ ErrorCode ArduinoI2CBus::readv(uint8_t address, ReadBuffer *buffers, size_t cnt)
 
   return ERROR_OK;
 }
+
 ErrorCode ArduinoI2CBus::writev(uint8_t address, WriteBuffer *buffers, size_t cnt, bool stop) {
   // logging is only enabled with vv level, if warnings are shown the caller
   // should log them
@@ -175,6 +176,41 @@ ErrorCode ArduinoI2CBus::writev(uint8_t address, WriteBuffer *buffers, size_t cn
       return ERROR_UNKNOWN;
   }
 }
+
+
+
+ErrorCode ArduinoI2CBus::write_like_normal(uint8_t address, uint8_t *buffers, size_t len, bool stop) {
+  // logging is only enabled with vv level, if warnings are shown the caller
+  // should log them
+  if (!initialized_) {
+    ESP_LOGVV(TAG, "i2c bus not initialized!");
+    return ERROR_NOT_INITIALIZED;
+  }
+
+  wire_->beginTransmission(address);
+  size_t ret = Wire.write(buffers, len);
+  uint8_t status = wire_->endTransmission(stop);
+  switch (status) {
+    case 0:
+      return ERROR_OK;
+    case 1:
+      // transmit buffer not large enough
+      ESP_LOGVV(TAG, "TX failed: buffer not large enough");
+      return ERROR_UNKNOWN;
+    case 2:
+    case 3:
+      ESP_LOGVV(TAG, "TX failed: not acknowledged");
+      return ERROR_NOT_ACKNOWLEDGED;
+    case 5:
+      ESP_LOGVV(TAG, "TX failed: timeout");
+      return ERROR_UNKNOWN;
+    case 4:
+    default:
+      ESP_LOGVV(TAG, "TX failed: unknown error %u", status);
+      return ERROR_UNKNOWN;
+  }
+}
+
 
 /// Perform I2C bus recovery, see:
 /// https://www.nxp.com/docs/en/user-guide/UM10204.pdf

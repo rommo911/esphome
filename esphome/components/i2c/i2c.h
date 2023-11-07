@@ -114,6 +114,14 @@ class I2CDevice {
     return write_register(a_register, data, len, stop) == ERROR_OK;
   }
 
+  ErrorCode writeByte_internal(const uint8_t *data, size_t len, bool stop);
+
+  bool writeByte(const uint8_t *data, size_t len, bool stop)
+  {
+    return writeByte_internal(data,len,stop);
+  }
+
+
   bool write_bytes(uint8_t a_register, const std::vector<uint8_t> &data) {
     return write_bytes(a_register, data.data(), data.size());
   }

@@ -31,6 +31,12 @@ ErrorCode I2CDevice::write_register(uint8_t a_register, const uint8_t *data, siz
   return bus_->writev(address_, buffers, 2, stop);
 }
 
+
+ErrorCode I2CDevice::writeByte_internal(const uint8_t *data, size_t len, bool stop) {
+  return bus_->write_like_normal(address_, data , len, stop);
+}
+
+
 ErrorCode I2CDevice::write_register16(uint16_t a_register, const uint8_t *data, size_t len, bool stop) {
   a_register = convert_big_endian(a_register);
   WriteBuffer buffers[2];
