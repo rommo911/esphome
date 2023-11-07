@@ -116,7 +116,7 @@ class I2CDevice {
 
   ErrorCode writeByte_internal(const uint8_t *data, size_t len, bool stop);
 
-  bool writeByte(const uint8_t *data, size_t len, bool stop)
+  bool writeByte(const uint8_t *data, size_t len, bool stop = true)
   {
     return writeByte_internal(data,len,stop);
   }

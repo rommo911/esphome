@@ -33,7 +33,7 @@ void AHT10rComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10r...");
   bool ret = false;
   for (int i = 0; i < 5; ++i) {
-    ret = this->write_bytes(AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD));
+    ret = this->writeByte(AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD));
     if (!ret)
     {
       ESP_LOGE(TAG, "Communication with AHT10r AHT10r_CALIBRATE_CMD failed! %d ", i);
@@ -48,24 +48,24 @@ void AHT10rComponent::setup() {
   uint8_t data = 0;
   if (this->write(&data, 1) != i2c::ERROR_OK) {
     ESP_LOGD(TAG, "Communication with AHT10r write failed!");
-    this->mark_failed();
-    return;
+    //this->mark_failed();
+    //return;
   }
   delay(AHT10r_DEFAULT_DELAY );
   if (this->read(&data, 1) != i2c::ERROR_OK) {
     ESP_LOGD(TAG, "Communication with  AHT10r data failed!");
-    this->mark_failed();
-    return;
+    //this->mark_failed();
+    //return;
   }
   if (this->read(&data, 1) != i2c::ERROR_OK) {
     ESP_LOGD(TAG, "Communication with AHT10r read 2 failed!");
-    this->mark_failed();
-    return;
+    //this->mark_failed();
+    //return;
   }
   if ((data & 0x68) != 0x08) {  // Bit[6:5] = 0b00, NORMAL mode and Bit[3] = 0b1, CALIBRATED
     ESP_LOGE(TAG, "AHT10r calibration failed!");
-    this->mark_failed();
-    return;
+    //this->mark_failed();
+    //return;
   }
 
   ESP_LOGI(TAG, "AHT10r calibrated");
@@ -73,7 +73,7 @@ void AHT10rComponent::setup() {
 
 void AHT10rComponent::update() {
   ESP_LOGI(TAG, "AHT10r update started");
-  if (!this->write_bytes(AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
+  if (!this->writeByte(AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
     ESP_LOGE(TAG, "Communication with AHT10r update failed!");
     this->status_set_warning();
     return;
