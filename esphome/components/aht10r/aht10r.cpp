@@ -21,10 +21,10 @@ namespace esphome {
 namespace aht10r {
 
 static const char *const TAG = "aht10r";
-static const uint8_t AHT10r_CALIBRATE_CMD[] = {0xE1, 0x08, 0x00};
-static const uint8_t AHT10r_MEASURE_CMD[] = {0xAC, 0x33, 0x00};
-static const uint8_t AHT10r_DEFAULT_DELAY = 5;  // ms, for calibration and temperature measurement
-static const uint8_t AHT10r_HUMIDITY_DELAY = 30;  // ms
+static const uint8_t AHT10r_CALIBRATE_CMD[] = {0x08, 0x00};
+static const uint8_t AHT10r_MEASURE_CMD[] = {0x33, 0x00};
+static const uint8_t AHT10r_DEFAULT_DELAY = 45;  // ms, for calibration and temperature measurement
+static const uint8_t AHT10r_HUMIDITY_DELAY = 45;  // ms
 static const uint8_t AHT10r_ATTEMPTS = 5;         // safety margin, normally 3 attempts are enough: 3*30=90ms
 
 
@@ -33,7 +33,7 @@ void AHT10rComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10r...");
   bool ret = false;
   for (int i = 0; i < 5; ++i) {
-    ret = this->write_bytes(0, AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD));
+    ret = this->write_bytes(0xE1, AHT10r_CALIBRATE_CMD, sizeof(AHT10r_CALIBRATE_CMD));
     if (!ret)
     {
       ESP_LOGE(TAG, "Communication with AHT10r AHT10r_CALIBRATE_CMD failed! %d ", i);
@@ -73,7 +73,7 @@ void AHT10rComponent::setup() {
 
 void AHT10rComponent::update() {
   ESP_LOGI(TAG, "AHT10r update started");
-  if (!this->write_bytes(0, AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
+  if (!this->write_bytes(0xAC, AHT10r_MEASURE_CMD, sizeof(AHT10r_MEASURE_CMD))) {
     ESP_LOGE(TAG, "Communication with AHT10r update failed!");
     this->status_set_warning();
     return;
