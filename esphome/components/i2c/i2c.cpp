@@ -32,7 +32,7 @@ ErrorCode I2CDevice::write_register(uint8_t a_register, const uint8_t *data, siz
 }
 
 
-ErrorCode I2CDevice::writeByte_internal(const uint8_t *data, size_t len, bool stop) {
+ErrorCode I2CDevice::writeByte_internal(uint8_t *data, size_t len, bool stop) {
   return bus_->write_like_normal(address_, data , len, stop);
 }
 
