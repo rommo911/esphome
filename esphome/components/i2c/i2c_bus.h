@@ -49,6 +49,7 @@ class I2CBus {
     return writev(address, buffers, cnt, true);
   }
   virtual ErrorCode writev(uint8_t address, WriteBuffer *buffers, size_t cnt, bool stop) = 0;
+  virtual ErrorCode write_like_normal(uint8_t address, uint8_t *buffers, size_t len, bool stop) = 0;
 
  protected:
   void i2c_scan_() {
