@@ -23,6 +23,8 @@ namespace aht10 {
 static const char *const TAG = "aht10";
 static const uint8_t AHTXX_INIT_CTRL_NOP = 0x00;  // safety margin, normally 3 attempts are enough: 3*30=90ms
 static const uint8_t AHT10_CALIBRATE_CMD = {0xE1};
+static const uint8_t AHT10_MEASURE_CMD_1 = 0xAC;
+
 static const uint8_t AHT10_MEASURE_CMD[] = {0x33, AHTXX_INIT_CTRL_NOP};
 static const uint8_t AHT10_DEFAULT_DELAY = 15;          // ms, for calibration and temperature measurement
 static const uint8_t AHT10_HUMIDITY_DELAY = 30;        // ms
@@ -114,7 +116,7 @@ void AHT10Component::update() {
     this->setup();
   }
 
-  if (!this->write_bytes(0xAC, AHT10_MEASURE_CMD, 3)) {
+  if (!this->write_bytes(AHT10_MEASURE_CMD_1, AHT10_MEASURE_CMD, sizeof(AHT10_MEASURE_CMD))) {
     ESP_LOGE(TAG, "Communication with AHT10 update write_bytes AHT10_MEASURE_CMD failed test!");
     // this->status_set_warning();
     setupDone = false;
@@ -142,7 +144,7 @@ void AHT10Component::update() {
         break;
       } else {
         ESP_LOGD(TAG, "ATH10 Unrealistic humidity (0x0), retrying...");
-        if (!this->write_bytes(0, AHT10_MEASURE_CMD, sizeof(AHT10_MEASURE_CMD))) {
+        if (!this->write_bytes(AHT10_MEASURE_CMD_1, AHT10_MEASURE_CMD, sizeof(AHT10_MEASURE_CMD))) {
           ESP_LOGE(TAG, "Communication with AHT10 failed!");
           this->status_set_warning();
           return;
