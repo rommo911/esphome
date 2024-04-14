@@ -37,9 +37,17 @@ static const uint8_t AHTXX_SOFT_RESET_REG[] = {0xBA};  // safety margin, normall
 static const uint8_t AHT2X_INIT_REG[] = {0xBE, AHTXX_INIT, AHTXX_INIT_CTRL_NOP};
 
 void AHT10Component::setup() {
-  ESP_LOGI(TAG, "Setting up AHT10...");
-  ESP_LOGE(TAG, "Setting up AHT10...");
   ESP_LOGCONFIG(TAG, "Setting up AHT10...");
+
+   if (!this->write_command(AHTXX_SOFT_RESET_REG)) {
+      ESP_LOGE(TAG, "Communication with AHT10 AHTXX_SOFT_RESET_REG  failed!");
+    //this->mark_failed();
+    //return;
+  }
+  else 
+  {
+    ESP_LOGI(TAG, "Communication with AHT10 AHTXX_SOFT_RESET_REG  SUCCESS!");
+  }
 
   if (!this->write_bytes(0, AHTXX_SOFT_RESET_REG, sizeof(AHTXX_SOFT_RESET_REG))) {
     ESP_LOGE(TAG, "Communication with AHT10 AHTXX_SOFT_RESET_REG failed!");
