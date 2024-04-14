@@ -28,6 +28,7 @@ static const uint8_t AHT10_DEFAULT_DELAY = 5;          // ms, for calibration an
 static const uint8_t AHT10_HUMIDITY_DELAY = 30;        // ms
 static const uint8_t AHT10_ATTEMPTS = 3;               // safety margin, normally 3 attempts are enough: 3*30=90ms
 static const uint8_t AHTXX_SOFT_RESET_REG[] = {0xBA};  // safety margin, normally 3 attempts are enough: 3*30=90ms
+static const uint8_t AHTXX_SOFT_RESET_REG2 = 0xBA;  // safety margin, normally 3 attempts are enough: 3*30=90ms
 
 #define AHT1X_INIT_CTRL_NORMAL_MODE 0x00  // normal mode on/off       bit[6:5], for AHT1x only
 #define AHT1X_INIT_CTRL_CYCLE_MODE 0x20   // cycle mode on/off        bit[6:5], for AHT1x only
@@ -39,7 +40,7 @@ static const uint8_t AHT2X_INIT_REG[] = {0xBE, AHTXX_INIT, AHTXX_INIT_CTRL_NOP};
 void AHT10Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10...");
 
-   if (!this->write_command(AHTXX_SOFT_RESET_REG)) {
+   if (!this->write_command(AHTXX_SOFT_RESET_REG2)) {
       ESP_LOGE(TAG, "Communication with AHT10 AHTXX_SOFT_RESET_REG  failed!");
     //this->mark_failed();
     //return;
