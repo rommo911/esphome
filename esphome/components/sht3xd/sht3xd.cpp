@@ -19,10 +19,13 @@ void SHT3XDComponent::setup() {
   ESP_LOGCONFIG(TAG, "Setting up SHT3xD...");
   uint16_t raw_serial_number[2];
   if (!this->get_register(SHT3XD_COMMAND_READ_SERIAL_NUMBER, raw_serial_number, 2)) {
-    this->mark_failed();
-    return;
+    //this->mark_failed();
+    ESP_LOGE(TAG, "Communication with SHT3xD SHT3XD_COMMAND_READ_SERIAL_NUMBER failed!");
+    //return;
+    
   }
   if (!this->write_command(heater_enabled_ ? SHT3XD_COMMAND_HEATER_ENABLE : SHT3XD_COMMAND_HEATER_DISABLE)) {
+        ESP_LOGE(TAG, "Communication with SHT3xD SHT3XD_COMMAND_HEATER_ENABLE failed!");
     this->mark_failed();
     return;
   }
