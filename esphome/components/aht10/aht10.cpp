@@ -22,7 +22,7 @@ namespace aht10 {
 
 static const char *const TAG = "aht10";
 static const uint8_t AHTXX_INIT_CTRL_NOP = 0x00;  // safety margin, normally 3 attempts are enough: 3*30=90ms
-static const uint8_t AHT10_CALIBRATE_CMD[] = {0xE1};
+static const uint8_t AHT10_CALIBRATE_CMD = {0xE1};
 static const uint8_t AHT10_MEASURE_CMD[] = {0x33, AHTXX_INIT_CTRL_NOP};
 static const uint8_t AHT10_DEFAULT_DELAY = 5;          // ms, for calibration and temperature measurement
 static const uint8_t AHT10_HUMIDITY_DELAY = 30;        // ms
@@ -64,11 +64,11 @@ void AHT10Component::setup() {
     // return;
   }
 
-  if (!this->write_bytes(0, AHT10_CALIBRATE_CMD, sizeof(AHT10_CALIBRATE_CMD))) {
+  /*if (!this->write_bytes(0, AHT10_CALIBRATE_CMD, sizeof(AHT10_CALIBRATE_CMD))) {
     ESP_LOGE(TAG, "Communication with AHT10 AHT10_CALIBRATE_CMD failed!");
     // this->mark_failed();
     // return;
-  }
+  }*/
 
   if (!this->write_command(AHT10_CALIBRATE_CMD)) {
       ESP_LOGE(TAG, "Communication with AHT10 AHT10_CALIBRATE_CMD  failed!");
