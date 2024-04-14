@@ -39,6 +39,8 @@ static const uint8_t AHT2X_INIT_REG[] = {0xBE ,AHTXX_INIT ,AHTXX_INIT_CTRL_NOP }
 
 void AHT10Component::setup() {
   ESP_LOGI(TAG, "Setting up AHT10...");
+  ESP_LOGE(TAG, "Setting up AHT10...");
+  ESP_LOGCONFIG(TAG, "Setting up AHT10...");
 
   if (!this->write_bytes(0, AHTXX_SOFT_RESET_REG, sizeof(AHTXX_SOFT_RESET_REG))) {
     ESP_LOGE(TAG, "Communication with AHT10 AHTXX_SOFT_RESET_REG failed!");
@@ -80,14 +82,19 @@ void AHT10Component::setup() {
    // this->mark_failed();
    // return;
   }
-
+  setupDone = true;
   ESP_LOGI(TAG, "AHT10 calibrated");
 }
 
 void AHT10Component::update() {
+  if (setupDone = false)
+  {
+    this->setup();
+  }
+
   if (!this->write_bytes(0, AHT10_MEASURE_CMD, 3)) {
     ESP_LOGE(TAG, "Communication with AHT10 update write_bytes AHT10_MEASURE_CMD failed!");
-    this->status_set_warning();
+    //this->status_set_warning();
     return;
   }
   uint8_t data[6];

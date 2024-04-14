@@ -20,6 +20,7 @@ class AHT10Component : public PollingComponent, public i2c::I2CDevice {
  protected:
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *humidity_sensor_{nullptr};
+  bool setupDone = false;
 };
 
 }  // namespace aht10
