@@ -31,39 +31,39 @@ void AHT10Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10...");
 
   if (!this->write_bytes(0, AHT10_CALIBRATE_CMD, sizeof(AHT10_CALIBRATE_CMD))) {
-    ESP_LOGE(TAG, "Communication with AHT10 failed!");
-    this->mark_failed();
-    return;
+    ESP_LOGE(TAG, "Communication with AHT10 AHT10_CALIBRATE_CMD failed!");
+    //this->mark_failed();
+    //return;
   }
   uint8_t data = 0;
   if (this->write(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
-    this->mark_failed();
-    return;
+    ESP_LOGE(TAG, "Communication with AHT10 write failed!");
+    //this->mark_failed();
+    //return;
   }
   delay(AHT10_DEFAULT_DELAY);
   if (this->read(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
-    this->mark_failed();
-    return;
+    ESP_LOGE(TAG, "Communication with AHT10 read failed!");
+    //this->mark_failed();
+    //return;
   }
   if (this->read(&data, 1) != i2c::ERROR_OK) {
-    ESP_LOGD(TAG, "Communication with AHT10 failed!");
-    this->mark_failed();
-    return;
+    ESP_LOGE(TAG, "Communication with AHT10  read failed!");
+    //this->mark_failed();
+    //return;
   }
   if ((data & 0x68) != 0x08) {  // Bit[6:5] = 0b00, NORMAL mode and Bit[3] = 0b1, CALIBRATED
     ESP_LOGE(TAG, "AHT10 calibration failed!");
-    this->mark_failed();
-    return;
+   // this->mark_failed();
+   // return;
   }
 
-  ESP_LOGV(TAG, "AHT10 calibrated");
+  ESP_LOGI(TAG, "AHT10 calibrated");
 }
 
 void AHT10Component::update() {
   if (!this->write_bytes(0, AHT10_MEASURE_CMD, sizeof(AHT10_MEASURE_CMD))) {
-    ESP_LOGE(TAG, "Communication with AHT10 failed!");
+    ESP_LOGE(TAG, "Communication with AHT10 update write_bytes AHT10_MEASURE_CMD failed!");
     this->status_set_warning();
     return;
   }
