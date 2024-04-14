@@ -3,11 +3,12 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/i2c/i2c.h"
+#include "esphome/components/sensirion_common/i2c_sensirion.h"
 
 namespace esphome {
 namespace aht10 {
 
-class AHT10Component : public PollingComponent, public i2c::I2CDevice {
+class AHT10Component : public PollingComponent, public sensirion_common::SensirionI2CDevice  {
  public:
   void setup() override;
   void update() override;

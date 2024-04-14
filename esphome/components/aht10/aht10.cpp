@@ -93,7 +93,7 @@ void AHT10Component::update() {
   }
 
   if (!this->write_bytes(0, AHT10_MEASURE_CMD, 3)) {
-    ESP_LOGE(TAG, "Communication with AHT10 update write_bytes AHT10_MEASURE_CMD failed!");
+    ESP_LOGE(TAG, "Communication with AHT10 update write_bytes AHT10_MEASURE_CMD failed test!");
     //this->status_set_warning();
     return;
   }
@@ -167,7 +167,7 @@ void AHT10Component::dump_config() {
   ESP_LOGCONFIG(TAG, "AHT10:");
   LOG_I2C_DEVICE(this);
   if (this->is_failed()) {
-    ESP_LOGE(TAG, "Communication with AHT10 failed!");
+    ESP_LOGE(TAG, " AHT10 set to failed!");
   }
   LOG_SENSOR("  ", "Temperature", this->temperature_sensor_);
   LOG_SENSOR("  ", "Humidity", this->humidity_sensor_);
