@@ -40,9 +40,9 @@ There are three documented parameters for modes:
   00 04 = Energy output mode
     This mode outputs detailed signal energy values for each gate and the target distance.
     The data format consist of the following.
-    Header HH, Length LL, Persence PP, Distance DD, Range Gate GG, 16 Gate Energies EE, Footer FF
-    HH HH HH HH LL LL PP DD DD GG GG EE EE .. 16x   .. FF FF FF FF
-    F4 F3 F2 F1 00 23 00 00 00 00 01 00 00 .. .. .. .. F8 F7 F6 F5
+    Header HH, Length LL, Persence PP, Distance DD, 16 Gate Energies EE, Footer FF
+    HH HH HH HH LL LL PP DD DD EE EE .. 16x   .. FF FF FF FF
+    F4 F3 F2 F1 23 00 00 00 00 00 00 .. .. .. .. F8 F7 F6 F5
   00 00 = debug output mode
     This mode outputs detailed values consisting of 20 Dopplers, 16 Ranges for a total 20 * 16 * 4 bytes
     The data format consist of the following.
@@ -68,6 +68,7 @@ void LD2420Component::dump_config() {
   ESP_LOGCONFIG(TAG, "LD2420:");
   ESP_LOGCONFIG(TAG, "  Firmware Version : %7s", this->ld2420_firmware_ver_);
   ESP_LOGCONFIG(TAG, "LD2420 Number:");
+#ifdef USE_NUMBER
   LOG_NUMBER(TAG, "  Gate Timeout:", this->gate_timeout_number_);
   LOG_NUMBER(TAG, "  Gate Max Distance:", this->max_gate_distance_number_);
   LOG_NUMBER(TAG, "  Gate Min Distance:", this->min_gate_distance_number_);
@@ -76,10 +77,13 @@ void LD2420Component::dump_config() {
     LOG_NUMBER(TAG, "  Gate Move Threshold:", this->gate_move_threshold_numbers_[gate]);
     LOG_NUMBER(TAG, "  Gate Still Threshold::", this->gate_still_threshold_numbers_[gate]);
   }
+#endif
+#ifdef USE_BUTTON
   LOG_BUTTON(TAG, "  Apply Config:", this->apply_config_button_);
   LOG_BUTTON(TAG, "  Revert Edits:", this->revert_config_button_);
   LOG_BUTTON(TAG, "  Factory Reset:", this->factory_reset_button_);
   LOG_BUTTON(TAG, "  Restart Module:", this->restart_module_button_);
+#endif
   ESP_LOGCONFIG(TAG, "LD2420 Select:");
   LOG_SELECT(TAG, "  Operating Mode", this->operating_selector_);
   if (this->get_firmware_int_(ld2420_firmware_ver_) < CALIBRATE_VERSION_MIN) {
@@ -183,9 +187,11 @@ void LD2420Component::factory_reset_action() {
     return;
   }
   this->set_min_max_distances_timeout(FACTORY_MAX_GATE, FACTORY_MIN_GATE, FACTORY_TIMEOUT);
+#ifdef USE_NUMBER
   this->gate_timeout_number_->state = FACTORY_TIMEOUT;
   this->min_gate_distance_number_->state = FACTORY_MIN_GATE;
   this->max_gate_distance_number_->state = FACTORY_MAX_GATE;
+#endif
   for (uint8_t gate = 0; gate < LD2420_TOTAL_GATES; gate++) {
     this->new_config.move_thresh[gate] = FACTORY_MOVE_THRESH[gate];
     this->new_config.still_thresh[gate] = FACTORY_STILL_THRESH[gate];
@@ -205,10 +211,11 @@ void LD2420Component::factory_reset_action() {
 void LD2420Component::restart_module_action() {
   ESP_LOGCONFIG(TAG, "Restarting LD2420 module...");
   this->send_module_restart();
-  delay_microseconds_safe(45000);
-  this->set_config_mode(true);
-  this->set_system_mode(system_mode_);
-  this->set_config_mode(false);
+  this->set_timeout(250, [this]() {
+    this->set_config_mode(true);
+    this->set_system_mode(system_mode_);
+    this->set_config_mode(false);
+  });
   ESP_LOGCONFIG(TAG, "LD2420 Restarted.");
 }
 
@@ -486,19 +493,16 @@ void LD2420Component::handle_ack_data_(uint8_t *buffer, int len) {
 }
 
 int LD2420Component::send_cmd_from_array(CmdFrameT frame) {
+  uint32_t start_millis = millis();
   uint8_t error = 0;
   uint8_t ack_buffer[64];
   uint8_t cmd_buffer[64];
-  uint16_t loop_count;
   this->cmd_reply_.ack = false;
   if (frame.command != CMD_RESTART)
     this->set_cmd_active_(true);  // Restart does not reply, thus no ack state required.
   uint8_t retry = 3;
   while (retry) {
-    // TODO setup a dynamic method e.g. millis time count etc. to tune for non ESP32 240Mhz devices
-    // this is ok for now since the module firmware is changing like the weather atm
     frame.length = 0;
-    loop_count = 1250;
     uint16_t frame_data_bytes = frame.data_length + 2;  // Always add two bytes for the cmd size
 
     memcpy(&cmd_buffer[frame.length], &frame.header, sizeof(frame.header));
@@ -521,24 +525,23 @@ int LD2420Component::send_cmd_from_array(CmdFrameT frame) {
       this->write_byte(cmd_buffer[index]);
     }
 
-    delay_microseconds_safe(500);  // give the module a moment to process it
     error = 0;
     if (frame.command == CMD_RESTART) {
-      delay_microseconds_safe(25000);  // Wait for the restart
-      return 0;                        // restart does not reply exit now
+      return 0;  // restart does not reply exit now
     }
 
     while (!this->cmd_reply_.ack) {
       while (available()) {
         this->readline_(read(), ack_buffer, sizeof(ack_buffer));
       }
-      delay_microseconds_safe(250);
-      if (loop_count <= 0) {
+      delay_microseconds_safe(1450);
+      // Wait on an Rx from the LD2420 for up to 3 1 second loops, otherwise it could trigger a WDT.
+      if ((millis() - start_millis) > 1000) {
+        start_millis = millis();
         error = LD2420_ERROR_TIMEOUT;
         retry--;
         break;
       }
-      loop_count--;
     }
     if (this->cmd_reply_.ack)
       retry = 0;
