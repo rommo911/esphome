@@ -13,9 +13,10 @@ from esphome.const import (
 )
 
 DEPENDENCIES = ["i2c"]
+AUTO_LOAD = ["sensirion_common"]
 
 aht10_2_ns = cg.esphome_ns.namespace("aht10_2")
-AHT10_2_Component = aht10_2_ns.class_("AHT10_2_Component", cg.PollingComponent, i2c.I2CDevice, sensirion_common)
+AHT10_2_Component = aht10_2_ns.class_("AHT10_2_Component", cg.PollingComponent, i2c.I2CDevice, sensirion_common.SensirionI2CDevice)
 
 CONFIG_SCHEMA = (
     cv.Schema(
