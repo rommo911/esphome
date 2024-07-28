@@ -6,9 +6,9 @@
 #include "esphome/components/sensirion_common/i2c_sensirion.h"
 
 namespace esphome {
-namespace aht10 {
+namespace aht10_2 {
 
-class AHT10Component : public PollingComponent, public sensirion_common::SensirionI2CDevice  {
+class AHT10_2_Component : public PollingComponent, public sensirion_common::SensirionI2CDevice  {
  public:
   void setup() override;
   void update() override;

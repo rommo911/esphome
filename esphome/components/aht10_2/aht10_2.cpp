@@ -12,15 +12,15 @@
 // immediately for temperature. But for humidity, it takes >90ms to get a valid data. From experience, we have best
 // results making successive requests; the current implementation makes 3 attempts with a delay of 30ms each time.
 
-#include "aht10.h"
+#include "aht10_2.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 #include <cinttypes>
 
 namespace esphome {
-namespace aht10 {
+namespace aht10_2 {
 
-static const char *const TAG = "aht10";
+static const char *const TAG = "aht10_2";
 static const uint8_t AHTXX_INIT_CTRL_NOP = 0x00;  // safety margin, normally 3 attempts are enough: 3*30=90ms
 static const uint8_t AHT10_CALIBRATE_CMD = {0xE1};
 static const uint8_t AHT10_MEASURE_CMD_1 = 0xAC;
@@ -41,7 +41,7 @@ static const uint8_t AHT2X_INIT_REG_ADD = 0xBE ;
 
 static const uint8_t AHT2X_INIT_REG[] = { AHTXX_INIT, AHTXX_INIT_CTRL_NOP};
 
-void AHT10Component::setup() {
+void AHT10_2_Component::setup() {
   ESP_LOGCONFIG(TAG, "Setting up AHT10...");
 
    if (!this->write_command(AHTXX_SOFT_RESET_REG2)) {
@@ -111,7 +111,7 @@ void AHT10Component::setup() {
   ESP_LOGI(TAG, "AHT10 calibrated");
 }
 
-void AHT10Component::update() {
+void AHT10_2_Component::update() {
   if (setupDone == false) {
     this->setup();
   }
@@ -186,9 +186,9 @@ void AHT10Component::update() {
   this->status_clear_warning();
 }
 
-float AHT10Component::get_setup_priority() const { return setup_priority::DATA; }
+float AHT10_2_Component::get_setup_priority() const { return setup_priority::DATA; }
 
-void AHT10Component::dump_config() {
+void AHT10_2_Component::dump_config() {
   ESP_LOGCONFIG(TAG, "AHT10:");
   LOG_I2C_DEVICE(this);
   if (this->is_failed()) {
