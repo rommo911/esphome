@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import i2c, sensor
+from esphome.components import i2c, sensor, sensirion_common
 from esphome.const import (
     CONF_HUMIDITY,
     CONF_ID,
@@ -15,7 +15,7 @@ from esphome.const import (
 DEPENDENCIES = ["i2c"]
 
 aht10_2_ns = cg.esphome_ns.namespace("aht10_2")
-AHT10_2_Component = aht10_2_ns.class_("AHT10_2_Component", cg.PollingComponent, i2c.I2CDevice, i2c.sensirion_common)
+AHT10_2_Component = aht10_2_ns.class_("AHT10_2_Component", cg.PollingComponent, i2c.I2CDevice, sensirion_common)
 
 CONFIG_SCHEMA = (
     cv.Schema(
