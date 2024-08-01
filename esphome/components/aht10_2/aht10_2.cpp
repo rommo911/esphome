@@ -26,9 +26,9 @@ static const uint8_t AHT10_CALIBRATE_CMD = {0xE1};
 static const uint8_t AHT10_MEASURE_CMD_1 = 0xAC;
 
 static const uint8_t AHT10_MEASURE_CMD[] = {0x33, AHTXX_INIT_CTRL_NOP};
-static const uint8_t AHT10_DEFAULT_DELAY = 15;          // ms, for calibration and temperature measurement
-static const uint8_t AHT10_HUMIDITY_DELAY = 30;        // ms
-static const uint8_t AHT10_ATTEMPTS = 3;               // safety margin, normally 3 attempts are enough: 3*30=90ms
+static const uint8_t AHT10_DEFAULT_DELAY = 10;          // ms, for calibration and temperature measurement
+static const uint8_t AHT10_HUMIDITY_DELAY = 10;        // ms
+static const uint8_t AHT10_ATTEMPTS = 5;               // safety margin, normally 3 attempts are enough: 3*30=90ms
 static const uint8_t AHTXX_SOFT_RESET_REG[] = {0xBA};  // safety margin, normally 3 attempts are enough: 3*30=90ms
 static const uint8_t AHTXX_SOFT_RESET_REG2 = 0xBA;  // safety margin, normally 3 attempts are enough: 3*30=90ms
 
