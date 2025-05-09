@@ -54,9 +54,9 @@ void CameraWebServer::setup() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = this->port_;
   config.ctrl_port = this->port_;
-  config.max_open_sockets = 2;
-  config.max_uri_handlers = 2;
-  config.backlog_conn = 2;
+  config.max_open_sockets = 4;
+  config.max_uri_handlers = 4;
+  config.backlog_conn = 4;
   config.lru_purge_enable = true;
   config.send_wait_timeout = 1;
   config.recv_wait_timeout = 1;
@@ -155,7 +155,7 @@ static esp_err_t httpd_send_all(httpd_req_t *r, const char *buf, size_t buf_len)
 esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   esp_err_t res = ESP_OK;
   char part_buf[64];
-
+  ESP_LOGW(TAG, "STREAM: started streaming_handler_");
   // This manually constructs HTTP response to avoid chunked encoding
   // which is not supported by some clients
   streamHandlersCount++;
@@ -208,7 +208,9 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   if (streamHandlersCount == 0) {
     esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
   }
-
+  int64_t frame_time = millis() - last_frame;
+  ESP_LOGW(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),  (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
+  ESP_LOGW(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   ESP_LOGI(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   return res;
 }
