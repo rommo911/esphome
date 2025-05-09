@@ -115,13 +115,6 @@ void CameraWebServer::loop() {
   }
 }
 
-std::shared_ptr<esphome::esp32_camera::CameraImage> CameraWebServer::wait_for_image_() {
-  std::shared_ptr<esphome::esp32_camera::CameraImage> image;
-    // retry as we might still be fetching image
-  xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
-  image = (this->image_);
-  return image;
-}
 
 esp_err_t CameraWebServer::handler_(struct httpd_req *req) {
   esp_err_t res = ESP_FAIL;
@@ -177,7 +170,8 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
     esp32_camera::global_esp32_camera->start_stream(esphome::esp32_camera::WEB_REQUESTER);
   }
   while (res == ESP_OK && this->running_) {
-    auto image = this->wait_for_image_();
+    xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+    auto image = this->image_;
     xSemaphoreTake(image_mutex, portMAX_DELAY);
     if (!image) {
       ESP_LOGW(TAG, "STREAM: failed to acquire frame");
