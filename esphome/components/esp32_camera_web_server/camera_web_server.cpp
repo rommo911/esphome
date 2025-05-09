@@ -171,8 +171,8 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   }
   while (res == ESP_OK && this->running_) {
     xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-    auto image = this->image_;
     xSemaphoreTake(image_mutex, portMAX_DELAY);
+    auto image = this->image_;
     if (!image) {
       ESP_LOGW(TAG, "STREAM: failed to acquire frame");
       res = ESP_FAIL;
@@ -196,6 +196,8 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
                (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
     }
     xSemaphoreGive(image_mutex);
+    vTaskDelay(pdTICKS_TO_MS(20));
+    xEventGroupClearBits(image_event, IMAGE_READY_BIT);
   }
   
 
