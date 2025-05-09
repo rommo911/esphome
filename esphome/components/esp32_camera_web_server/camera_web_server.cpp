@@ -17,6 +17,7 @@ namespace esp32_camera_web_server {
 static const int IMAGE_REQUEST_TIMEOUT = 5000;
 static const char *const TAG = "esp32_camera_web_server";
 
+#define IMAGE_READY_BIT (1 << 0)
 #define PART_BOUNDARY "123456789000000000000987654321"
 #define CONTENT_TYPE "image/jpeg"
 #define CONTENT_LENGTH "Content-Length"
@@ -35,6 +36,8 @@ static const char *const STREAM_PART = "Content-Type: " CONTENT_TYPE "\r\n" CONT
 static const char *const STREAM_BOUNDARY = "\r\n"
                                            "--" PART_BOUNDARY "\r\n";
 
+uint8_t CameraWebServer::streamHandlersCount{0};
+
 CameraWebServer::CameraWebServer() {}
 
 CameraWebServer::~CameraWebServer() {}
@@ -46,7 +49,8 @@ void CameraWebServer::setup() {
   }
 
   this->semaphore_ = xSemaphoreCreateBinary();
-
+  image_mutex = xSemaphoreCreateMutex();
+  image_event = xEventGroupCreate();
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = this->port_;
   config.ctrl_port = this->port_;
@@ -63,14 +67,19 @@ void CameraWebServer::setup() {
       .uri = "/",
       .method = HTTP_GET,
       .handler = [](struct httpd_req *req) { return ((CameraWebServer *) req->user_ctx)->handler_(req); },
-      .user_ctx = this};
+      .user_ctx = this,
+  };
 
   httpd_register_uri_handler(this->httpd_, &uri);
 
   esp32_camera::global_esp32_camera->add_image_callback([this](std::shared_ptr<esp32_camera::CameraImage> image) {
     if (this->running_ && image->was_requested_by(esp32_camera::WEB_REQUESTER)) {
-      this->image_ = std::move(image);
-      xSemaphoreGive(this->semaphore_);
+      auto ret = xSemaphoreTake(image_mutex, pdMS_TO_TICKS(500));
+      if (ret == pdPASS) {
+        this->image_ = std::move(image);
+        xSemaphoreGive(image_mutex);
+        xEventGroupSetBits(image_event, IMAGE_READY_BIT);
+      }
     }
   });
 }
@@ -108,14 +117,9 @@ void CameraWebServer::loop() {
 
 std::shared_ptr<esphome::esp32_camera::CameraImage> CameraWebServer::wait_for_image_() {
   std::shared_ptr<esphome::esp32_camera::CameraImage> image;
-  image.swap(this->image_);
-
-  if (!image) {
     // retry as we might still be fetching image
-    xSemaphoreTake(this->semaphore_, IMAGE_REQUEST_TIMEOUT / portTICK_PERIOD_MS);
-    image.swap(this->image_);
-  }
-
+  xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdTRUE, pdFALSE, portMAX_DELAY);
+  image = (this->image_);
   return image;
 }
 
@@ -160,7 +164,7 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
 
   // This manually constructs HTTP response to avoid chunked encoding
   // which is not supported by some clients
-
+  streamHandlersCount++;
   res = httpd_send_all(req, STREAM_HEADER, strlen(STREAM_HEADER));
   if (res != ESP_OK) {
     ESP_LOGW(TAG, "STREAM: failed to set HTTP header");
@@ -169,12 +173,12 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
 
   uint32_t last_frame = millis();
   uint32_t frames = 0;
-
-  esp32_camera::global_esp32_camera->start_stream(esphome::esp32_camera::WEB_REQUESTER);
-
+  if (streamHandlersCount == 1) {
+    esp32_camera::global_esp32_camera->start_stream(esphome::esp32_camera::WEB_REQUESTER);
+  }
   while (res == ESP_OK && this->running_) {
     auto image = this->wait_for_image_();
-
+    xSemaphoreTake(image_mutex, portMAX_DELAY);
     if (!image) {
       ESP_LOGW(TAG, "STREAM: failed to acquire frame");
       res = ESP_FAIL;
@@ -197,16 +201,19 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
       ESP_LOGD(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) image->get_data_length(),
                (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
     }
+    xSemaphoreGive(image_mutex);
   }
+  
 
   if (!frames) {
     res = httpd_send_all(req, STREAM_ERROR, strlen(STREAM_ERROR));
   }
-
-  esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
+  streamHandlersCount--;
+  if (streamHandlersCount == 0) {
+    esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
+  }
 
   ESP_LOGI(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
-
   return res;
 }
 

@@ -43,6 +43,10 @@ class CameraWebServer : public Component {
   std::shared_ptr<esphome::esp32_camera::CameraImage> image_;
   bool running_{false};
   Mode mode_{STREAM};
+  bool stream_started{false};
+  static uint8_t streamHandlersCount;
+  EventGroupHandle_t image_event{0};
+  SemaphoreHandle_t image_mutex;
 };
 
 }  // namespace esp32_camera_web_server
