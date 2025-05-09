@@ -115,7 +115,6 @@ void CameraWebServer::loop() {
   }
 }
 
-
 esp_err_t CameraWebServer::handler_(struct httpd_req *req) {
   esp_err_t res = ESP_FAIL;
 
@@ -199,7 +198,6 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
     vTaskDelay(pdTICKS_TO_MS(20));
     xEventGroupClearBits(image_event, IMAGE_READY_BIT);
   }
-  
 
   if (!frames) {
     res = httpd_send_all(req, STREAM_ERROR, strlen(STREAM_ERROR));
@@ -215,10 +213,10 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
 
 esp_err_t CameraWebServer::snapshot_handler_(struct httpd_req *req) {
   esp_err_t res = ESP_OK;
-
   esp32_camera::global_esp32_camera->request_image(esphome::esp32_camera::WEB_REQUESTER);
-
-  auto image = this->wait_for_image_();
+  xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+  xSemaphoreTake(image_mutex, portMAX_DELAY);
+  auto image = this->image_;
 
   if (!image) {
     ESP_LOGW(TAG, "SNAPSHOT: failed to acquire frame");
@@ -238,6 +236,8 @@ esp_err_t CameraWebServer::snapshot_handler_(struct httpd_req *req) {
   if (res == ESP_OK) {
     res = httpd_resp_send(req, (const char *) image->get_data_buffer(), image->get_data_length());
   }
+  xSemaphoreGive(image_mutex);
+  xEventGroupClearBits(image_event, IMAGE_READY_BIT);
   return res;
 }
 
