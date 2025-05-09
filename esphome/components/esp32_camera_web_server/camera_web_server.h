@@ -5,6 +5,7 @@
 #include <cinttypes>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/event_groups.h>
 
 #include "esphome/components/esp32_camera/esp32_camera.h"
 #include "esphome/core/component.h"
