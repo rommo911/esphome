@@ -54,10 +54,12 @@ void CameraWebServer::setup() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = this->port_;
   config.ctrl_port = this->port_;
-  config.max_open_sockets = 1;
+  config.max_open_sockets = 2;
+  config.max_uri_handlers = 2;
   config.backlog_conn = 2;
   config.lru_purge_enable = true;
-
+  config.send_wait_timeout = 1;
+  config.recv_wait_timeout = 1;
   if (httpd_start(&this->httpd_, &config) != ESP_OK) {
     mark_failed();
     return;
