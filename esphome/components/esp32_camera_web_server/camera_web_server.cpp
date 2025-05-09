@@ -173,7 +173,7 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   }
   streamHandlersCount++;
   while (res == ESP_OK && this->running_) {
-    auto event_ret = xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(1000));
+    auto event_ret = xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(3000));
     if (event_ret != pdPASS) {
       ESP_LOGE(TAG, "STREAM: failed to acquire new image event");
       res = ESP_FAIL;
@@ -220,9 +220,8 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   }
 
   int64_t frame_time = millis() - last_frame;
-  ESP_LOGW(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),
+  ESP_LOGI(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),
            (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
-  ESP_LOGW(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   ESP_LOGI(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   streamHandlersCount--;
   if (streamHandlersCount == 0) {
