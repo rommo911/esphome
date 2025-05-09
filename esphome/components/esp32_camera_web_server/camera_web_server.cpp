@@ -81,6 +81,8 @@ void CameraWebServer::setup() {
         this->image_ = std::move(image);
         xSemaphoreGive(image_mutex);
         xEventGroupSetBits(image_event, IMAGE_READY_BIT);
+      } else {
+        ESP_LOGE(TAG, "add_image_callback: failed to acquire image_mutex");
       }
     }
   });
@@ -172,10 +174,15 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   }
   while (res == ESP_OK && this->running_) {
     xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-    xSemaphoreTake(image_mutex, portMAX_DELAY);
+    auto mtx_ret = xSemaphoreTake(image_mutex, pdMS_TO_TICKS(1000));
+
+    if (mtx_ret != pdPASS) {
+      ESP_LOGE(TAG, "STREAM: failed to acquire image_mutex");
+      res = ESP_FAIL;
+    }
     auto image = this->image_;
     if (!image) {
-      ESP_LOGW(TAG, "STREAM: failed to acquire frame");
+      ESP_LOGE(TAG, "STREAM: failed to acquire frame");
       res = ESP_FAIL;
     }
     if (res == ESP_OK) {
@@ -209,7 +216,8 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
     esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
   }
   int64_t frame_time = millis() - last_frame;
-  ESP_LOGW(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),  (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
+  ESP_LOGW(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),
+           (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
   ESP_LOGW(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   ESP_LOGI(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   return res;
@@ -226,12 +234,14 @@ esp_err_t CameraWebServer::snapshot_handler_(struct httpd_req *req) {
     ESP_LOGW(TAG, "SNAPSHOT: failed to acquire frame");
     httpd_resp_send_500(req);
     res = ESP_FAIL;
+    xSemaphoreGive(image_mutex);
     return res;
   }
 
   res = httpd_resp_set_type(req, CONTENT_TYPE);
   if (res != ESP_OK) {
     ESP_LOGW(TAG, "SNAPSHOT: failed to set HTTP response type");
+    xSemaphoreGive(image_mutex);
     return res;
   }
 
