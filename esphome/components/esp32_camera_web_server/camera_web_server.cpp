@@ -173,17 +173,24 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   }
   streamHandlersCount++;
   while (res == ESP_OK && this->running_) {
-    xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+    auto event_ret = xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(1000));
+    if (event_ret != pdPASS) {
+      ESP_LOGE(TAG, "STREAM: failed to acquire new image event");
+      res = ESP_FAIL;
+      continue;
+    }
     auto mtx_ret = xSemaphoreTake(image_mutex, pdMS_TO_TICKS(1000));
 
     if (mtx_ret != pdPASS) {
       ESP_LOGE(TAG, "STREAM: failed to acquire image_mutex");
       res = ESP_FAIL;
+      continue;
     }
     auto image = this->image_;
     if (!image) {
       ESP_LOGE(TAG, "STREAM: failed to acquire frame");
       res = ESP_FAIL;
+      continue;
     }
     if (res == ESP_OK) {
       size_t hlen = snprintf(part_buf, 64, STREAM_PART, image->get_data_length());
