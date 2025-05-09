@@ -160,7 +160,6 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
   ESP_LOGW(TAG, "STREAM: started streaming_handler_");
   // This manually constructs HTTP response to avoid chunked encoding
   // which is not supported by some clients
-  streamHandlersCount++;
   res = httpd_send_all(req, STREAM_HEADER, strlen(STREAM_HEADER));
   if (res != ESP_OK) {
     ESP_LOGW(TAG, "STREAM: failed to set HTTP header");
@@ -169,9 +168,10 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
 
   uint32_t last_frame = millis();
   uint32_t frames = 0;
-  if (streamHandlersCount == 1) {
+  if (streamHandlersCount == 0) {
     esp32_camera::global_esp32_camera->start_stream(esphome::esp32_camera::WEB_REQUESTER);
   }
+  streamHandlersCount++;
   while (res == ESP_OK && this->running_) {
     xEventGroupWaitBits(image_event, IMAGE_READY_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
     auto mtx_ret = xSemaphoreTake(image_mutex, pdMS_TO_TICKS(1000));
@@ -204,22 +204,23 @@ esp_err_t CameraWebServer::streaming_handler_(struct httpd_req *req) {
                (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
     }
     xSemaphoreGive(image_mutex);
-    vTaskDelay(pdTICKS_TO_MS(20));
+    vTaskDelay(pdMS_TO_TICKS(20));
     xEventGroupClearBits(image_event, IMAGE_READY_BIT);
   }
 
   if (!frames) {
     res = httpd_send_all(req, STREAM_ERROR, strlen(STREAM_ERROR));
   }
-  streamHandlersCount--;
-  if (streamHandlersCount == 0) {
-    esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
-  }
+
   int64_t frame_time = millis() - last_frame;
   ESP_LOGW(TAG, "MJPG: %" PRIu32 "B %" PRIu32 "ms (%.1ffps)", (uint32_t) this->image_->get_data_length(),
            (uint32_t) frame_time, 1000.0 / (uint32_t) frame_time);
   ESP_LOGW(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
   ESP_LOGI(TAG, "STREAM: closed. Frames: %" PRIu32, frames);
+  streamHandlersCount--;
+  if (streamHandlersCount == 0) {
+    esp32_camera::global_esp32_camera->stop_stream(esphome::esp32_camera::WEB_REQUESTER);
+  }
   return res;
 }
 
