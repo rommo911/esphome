@@ -27,7 +27,7 @@ static const uint16_t SHT3XD_COMMAND_FETCH_DATA = 0xE000;
 void SHT3XDComponent::setup() {
   uint16_t raw_serial_number[2];
   if (!this->get_register(SHT3XD_COMMAND_READ_SERIAL_NUMBER_CLOCK_STRETCHING, raw_serial_number, 2)) {
-    this->error_code_ = READ_SERIAL_STRETCHED_FAILED;
+    //this->error_code_ = READ_SERIAL_STRETCHED_FAILED;
     if (!this->get_register(SHT3XD_COMMAND_READ_SERIAL_NUMBER, raw_serial_number, 2)) {
       this->error_code_ = READ_SERIAL_FAILED;
       //this->mark_failed();
@@ -39,7 +39,7 @@ void SHT3XDComponent::setup() {
 
   if (!this->write_command(heater_enabled_ ? SHT3XD_COMMAND_HEATER_ENABLE : SHT3XD_COMMAND_HEATER_DISABLE)) {
     this->error_code_ = WRITE_HEATER_MODE_FAILED;
-    this->mark_failed();
+    //this->mark_failed();
     return;
   }
 }
