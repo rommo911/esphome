@@ -30,7 +30,7 @@ void SHT3XDComponent::setup() {
     this->error_code_ = READ_SERIAL_STRETCHED_FAILED;
     if (!this->get_register(SHT3XD_COMMAND_READ_SERIAL_NUMBER, raw_serial_number, 2)) {
       this->error_code_ = READ_SERIAL_FAILED;
-      this->mark_failed();
+      //this->mark_failed();
       return;
     }
   }
